@@ -1,0 +1,11 @@
+[access]
+token = "agent-code"
+
+[rpc]
+listen = ":9091"
+
+[log]
+level = ["info","error","debug"]
+dir = "log"
+FileMaxSize = 102400000
+MaxCount = 3
