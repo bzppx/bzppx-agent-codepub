@@ -1,13 +1,14 @@
 package utils
 
 import (
-	"os"
-	"time"
-	"errors"
-	"strings"
-	"net/http"
 	"crypto/tls"
+	"errors"
+	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
+
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
@@ -15,8 +16,8 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 )
 
 var branchNamePrefix = "refs/heads/auto-"
@@ -29,12 +30,12 @@ type GitXParams struct {
 	SshKeySalt string `json:"ssh_key_salt"`
 	Path       string `json:"path"`
 	Branch     string `json:"branch"`
-	Username       string `json:"username"`
+	Username   string `json:"username"`
 	Password   string `json:"password"`
 }
 
 // 验证参数合法性
-func (g *GitX) Validate(params GitXParams) (error) {
+func (g *GitX) Validate(params GitXParams) error {
 	if params.Path == "" {
 		return errors.New("Gitx params error: path requied!")
 	}
@@ -295,7 +296,10 @@ func (g *GitX) GetAuth(params GitXParams) (auth transport.AuthMethod, err error)
 		}
 		client.InstallProtocol("https", githttp.NewClient(customClient))
 		client.InstallProtocol("http", githttp.NewClient(customClient))
-		auth = githttp.NewBasicAuth(params.Username, params.Password)
+		auth = &githttp.BasicAuth{
+			Username: params.Username,
+			Password: params.Password,
+		}
 	} else {
 		if params.SshKeySalt != "" {
 			signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(params.SshKey), []byte(params.SshKeySalt))
