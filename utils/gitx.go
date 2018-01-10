@@ -24,6 +24,10 @@ var branchNamePrefix = "refs/heads/auto-"
 
 type GitX struct{}
 
+func NewGitX() *GitX {
+	return &GitX{}
+}
+
 type GitXParams struct {
 	Url        string `json:"url"`
 	SshKey     string `json:"ssh_key"`
@@ -122,7 +126,7 @@ func (g *GitX) CreateBranchName(params GitXParams) (name string, err error) {
 }
 
 // 发布代码
-func (g *GitX) Publish(paramsPointer *GitXParams, out *string) (err error) {
+func (g *GitX) Publish(paramsPointer *GitXParams) (err error) {
 	params := *paramsPointer
 	if NewFile().PathIsEmpty(params.Path) {
 		err = nil

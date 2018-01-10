@@ -1,6 +1,6 @@
 package service
 
-type Base struct {
+type BaseService struct {
 
 }
 
