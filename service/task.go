@@ -7,16 +7,16 @@ import (
 	"strconv"
 )
 
-type ServiceGit struct {
+type ServiceTask struct {
 
 }
 
-func NewServiceGit() *ServiceGit {
-	return &ServiceGit{}
+func NewServiceTask() *ServiceTask {
+	return &ServiceTask{}
 }
 
 // 验证参数
-func (g *ServiceGit) validateParams(args map[string]interface{}) (gitX utils.GitXParams, err error) {
+func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.GitXParams, err error) {
 	if _, ok := args["task_id"]; !ok {
 		return gitX, errors.New("args params task_id requied")
 	}
@@ -53,9 +53,9 @@ func (g *ServiceGit) validateParams(args map[string]interface{}) (gitX utils.Git
 	}, nil
 }
 
-// 发布代码操作
-func (g *ServiceGit) Publish(args map[string]interface{}, reply *interface{}) error {
-	gitParams, err := g.validateParams(args)
+// 创建发布任务
+func (t *ServiceTask) Publish(args map[string]interface{}, reply *interface{}) error {
+	gitParams, err := t.validateParams(args)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,8 @@ func (g *ServiceGit) Publish(args map[string]interface{}, reply *interface{}) er
 	return nil
 }
 
-// 获取发布执行结果
-func (g *ServiceGit) Status(args map[string]interface{}, reply *interface{}) error {
+// 获取发布任务执行结果
+func (g *ServiceTask) Status(args map[string]interface{}, reply *interface{}) error {
 	_, err := g.validateParams(args)
 	if err != nil {
 		return err
@@ -90,14 +90,23 @@ func (g *ServiceGit) Status(args map[string]interface{}, reply *interface{}) err
 		"result": taskMessage.Result,
 	}
 
-	if taskMessage.IsSuccess == containers.Task_Success {
-		containers.Tasks.Delete(taskId)
+	return nil
+}
+
+// 确认完成，删除任务记录
+func (g *ServiceTask) Delete(args map[string]interface{}, reply *interface{}) error {
+	_, err := g.validateParams(args)
+	if err != nil {
+		return err
 	}
+
+	taskId := args["task_id"].(string)
+	containers.Tasks.Delete(taskId)
 
 	return nil
 }
 
 // auto register
 func init()  {
-	Register(NewServiceGit())
+	Register(NewServiceTask())
 }
