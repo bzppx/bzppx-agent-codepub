@@ -1,6 +1,10 @@
 package containers
 
-import "bzppx-agent-codepub/utils"
+import (
+	"time"
+	"bzppx-agent-codepub/utils"
+	"log"
+)
 
 var Workers = Worker{}
 
@@ -12,7 +16,7 @@ func (w *Worker) Task() {
 	for {
 		tasks := Tasks.GetDefaultTasks()
 		if len(tasks) == 0 {
-			return
+			continue
 		}
 		for _, task := range tasks {
 			pathIsHave := Tasks.PathIsHaveTask(task.Path)
@@ -20,15 +24,22 @@ func (w *Worker) Task() {
 				continue
 			}
 			go func() {
+				defer func() {
+					e := recover()
+					if e != nil {
+						log.Println(e)
+					}
+				}()
 				// start publish code
-				err := utils.NewGitX().Publish(&task.GitX)
+				err := utils.NewGitX().Publish(task.GitX)
 				if err != nil {
-					Tasks.End(task.TaskId, Task_Failed)
+					Tasks.End(task.TaskLogId, Task_Failed, err.Error())
 				}else {
-					Tasks.End(task.TaskId, Task_Success)
+					Tasks.End(task.TaskLogId, Task_Success, "success")
 				}
 			}()
 		}
+		time.Sleep(2 * time.Second)
 	}
 }
 

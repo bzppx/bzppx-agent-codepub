@@ -12,8 +12,8 @@ const Task_Status_Default = 0 // 任务未开始
 const Task_Status_Starting = 1 // 任务开始
 const Task_Status_End = 2 // 任务完成
 
-const Task_Failed = 0 // 执行成功
-const Task_Success = 1 // 执行失败
+const Task_Failed = 0 // 执行失败
+const Task_Success = 1 // 执行成功
 
 func NewTask() Task {
 	return Task{
@@ -28,7 +28,7 @@ type Task struct {
 }
 
 type TaskMessage struct {
-	TaskId string
+	TaskLogId string
 	Path string
 	Status int
 	IsSuccess int
@@ -37,24 +37,24 @@ type TaskMessage struct {
 }
 
 // add a task message
-func (t *Task) Add(taskId string, path string, gitX utils.GitXParams) error {
+func (t *Task) Add(taskLogId string, path string, gitX utils.GitXParams) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	return t.add(taskId, path, gitX)
+	return t.add(taskLogId, path, gitX)
 }
 
 // add task
-func (t *Task) add(taskId string, path string, gitX utils.GitXParams) error {
+func (t *Task) add(taskLogId string, path string, gitX utils.GitXParams) error {
 
 	taskMessages := t.TaskMessages
 	for _, taskMessage := range taskMessages {
-		if taskMessage.TaskId == taskId {
+		if taskMessage.TaskLogId == taskLogId {
 			return errors.New("The task already exists")
 		}
 	}
 	taskMsg := &TaskMessage{
-		TaskId: taskId,
+		TaskLogId: taskLogId,
 		Path: path,
 		Status: Task_Status_Default,
 		IsSuccess: Task_Failed,
@@ -67,19 +67,19 @@ func (t *Task) add(taskId string, path string, gitX utils.GitXParams) error {
 }
 
 // delete a task
-func (t *Task) Delete(taskId string) error {
+func (t *Task) Delete(taskLogId string) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	return t.del(taskId)
+	return t.del(taskLogId)
 }
 
 // delete task
-func (t *Task) del(taskId string) error {
+func (t *Task) del(taskLogId string) error {
 
 	taskMessages := []*TaskMessage{}
 	for _, taskMessage := range t.TaskMessages {
-		if taskMessage.TaskId == taskId {
+		if taskMessage.TaskLogId == taskLogId {
 			continue
 		}
 		taskMessages = append(taskMessages, taskMessage)
@@ -90,17 +90,17 @@ func (t *Task) del(taskId string) error {
 }
 
 // task start
-func (t *Task) Start(taskId string) (err error) {
+func (t *Task) Start(taskLogId string) (err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	
-	taskMessage, err := t.GetTask(taskId)
+	taskMessage, err := t.GetTask(taskLogId)
 	if err != nil {
 		return
 	}
 	
 	newTaskMessage := &TaskMessage{
-		TaskId: taskId,
+		TaskLogId: taskLogId,
 		Path: taskMessage.Path,
 		Status: Task_Status_Starting,
 		IsSuccess: taskMessage.IsSuccess,
@@ -112,32 +112,32 @@ func (t *Task) Start(taskId string) (err error) {
 }
 
 // task start
-func (t *Task) End(taskId string, isSuccess int) (err error) {
+func (t *Task) End(taskLogId string, isSuccess int, Result string) (err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	
-	taskMessage, err := t.GetTask(taskId)
+	taskMessage, err := t.GetTask(taskLogId)
 	if err != nil {
 		return
 	}
 	
 	newTaskMessage := &TaskMessage{
-		TaskId: taskId,
+		TaskLogId: taskLogId,
 		Path: taskMessage.Path,
 		Status:Task_Status_End,
 		IsSuccess: isSuccess,
 		GitX: taskMessage.GitX,
-		Result: taskMessage.Result,
+		Result: Result,
 	}
 	
 	return t.update(newTaskMessage)
 }
 
 // get a task
-func (t *Task) GetTask(taskId string) (*TaskMessage, error)  {
+func (t *Task) GetTask(taskLogId string) (*TaskMessage, error)  {
 	taskMessages := t.TaskMessages
 	for _, taskMessage := range taskMessages {
-		if taskMessage.TaskId == taskId {
+		if taskMessage.TaskLogId == taskLogId {
 			return taskMessage, nil
 		}
 	}
@@ -145,17 +145,18 @@ func (t *Task) GetTask(taskId string) (*TaskMessage, error)  {
 	return nil, errors.New("The task not exists")
 }
 
-// update by taskId
+// update by taskLogId
 func (t *Task) update(task *TaskMessage) error {
 
 	isExists := false
-	taskMessages := []*TaskMessage{}
 	for _, taskMessage := range t.TaskMessages {
-		if taskMessage.TaskId == task.TaskId {
+		if taskMessage.TaskLogId == task.TaskLogId {
 			isExists = true
-			taskMessages = append(taskMessages, task)
-		}else {
-			taskMessages = append(taskMessages, taskMessage)
+			taskMessage.Path = task.Path
+			taskMessage.Status = task.Status
+			taskMessage.IsSuccess = task.IsSuccess
+			taskMessage.GitX = task.GitX
+			taskMessage.Result = task.Result
 		}
 	}
 	if !isExists {

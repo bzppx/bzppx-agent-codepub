@@ -126,8 +126,8 @@ func (g *GitX) CreateBranchName(params GitXParams) (name string, err error) {
 }
 
 // 发布代码
-func (g *GitX) Publish(paramsPointer *GitXParams) (err error) {
-	params := *paramsPointer
+func (g *GitX) Publish(params GitXParams) (err error) {
+	//params := *paramsPointer
 	if NewFile().PathIsEmpty(params.Path) {
 		err = nil
 		_, err = g.Clone(params)

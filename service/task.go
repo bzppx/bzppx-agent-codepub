@@ -5,6 +5,7 @@ import (
 	"errors"
 	"bzppx-agent-codepub/containers"
 	"strconv"
+	"encoding/json"
 )
 
 type ServiceTask struct {
@@ -17,7 +18,7 @@ func NewServiceTask() *ServiceTask {
 
 // 验证参数
 func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.GitXParams, err error) {
-	if _, ok := args["task_id"]; !ok {
+	if _, ok := args["task_log_id"]; !ok {
 		return gitX, errors.New("args params task_id requied")
 	}
 	if _, ok := args["url"]; !ok {
@@ -54,15 +55,15 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.Gi
 }
 
 // 创建发布任务
-func (t *ServiceTask) Publish(args map[string]interface{}, reply *interface{}) error {
+func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error {
 	gitParams, err := t.validateParams(args)
 	if err != nil {
 		return err
 	}
 
-	taskId := args["task_id"].(string)
+	taskLogId := args["task_log_id"].(string)
 	path := args["path"].(string)
-	err = containers.Tasks.Add(taskId, path, gitParams)
+	err = containers.Tasks.Add(taskLogId, path, gitParams)
 	if err != nil {
 		return err
 	}
@@ -71,37 +72,40 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *interface{}) e
 }
 
 // 获取发布任务执行结果
-func (g *ServiceTask) Status(args map[string]interface{}, reply *interface{}) error {
+func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	_, err := g.validateParams(args)
 	if err != nil {
 		return err
 	}
 
-	taskId := args["task_id"].(string)
+	taskLogId := args["task_log_id"].(string)
 
-	taskMessage, err := containers.Tasks.GetTask(taskId)
+	taskMessage, err := containers.Tasks.GetTask(taskLogId)
 	if err != nil {
 		return err
 	}
 
-	*reply = map[string]string{
+	resMap := map[string]string {
 		"status": strconv.Itoa(taskMessage.Status),
 		"is_success": strconv.Itoa(taskMessage.IsSuccess),
 		"result": taskMessage.Result,
 	}
 
+	resByte, _ := json.Marshal(resMap)
+	*reply = string(resByte)
+
 	return nil
 }
 
 // 确认完成，删除任务记录
-func (g *ServiceTask) Delete(args map[string]interface{}, reply *interface{}) error {
+func (g *ServiceTask) Delete(args map[string]interface{}, reply *string) error {
 	_, err := g.validateParams(args)
 	if err != nil {
 		return err
 	}
 
-	taskId := args["task_id"].(string)
-	containers.Tasks.Delete(taskId)
+	taskLogId := args["task_log_id"].(string)
+	containers.Tasks.Delete(taskLogId)
 
 	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "bzppx-agent-codepub/containers"
 	"net/rpc"
 	"bzppx-agent-codepub/service"
 	"crypto/tls"
