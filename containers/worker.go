@@ -3,7 +3,6 @@ package containers
 import (
 	"time"
 	"bzppx-agent-codepub/utils"
-	"log"
 )
 
 var Workers = Worker{}
@@ -27,22 +26,20 @@ func (w *Worker) Task() {
 				defer func() {
 					e := recover()
 					if e != nil {
-						log.Println(e)
+						Log.Error(e)
 					}
 				}()
 				// start publish code
 				commitId, err := utils.NewGitX().Publish(task.GitX)
 				if err != nil {
+					Log.Error("agent task "+task.TaskLogId+" publish faild: "+err.Error())
 					Tasks.End(task.TaskLogId, Task_Failed, err.Error(), commitId)
 				}else {
+					Log.Info("agent task "+task.TaskLogId+" publish success, commit_id: "+commitId)
 					Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
 				}
 			}()
 		}
 		time.Sleep(2 * time.Second)
 	}
-}
-
-func init()  {
-	go Workers.Task()
 }

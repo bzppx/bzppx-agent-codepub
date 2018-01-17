@@ -6,20 +6,13 @@ import (
 	"bzppx-agent-codepub/service"
 	"crypto/tls"
 	"os"
-	"fmt"
+	"bzppx-agent-codepub/containers"
 )
 
 // rpc server start
 
 func main()  {
 
-	fmt.Println(poster())
-	err := initConfig()
-	if err != nil {
-		fmt.Printf("%s", err)
-		os.Exit(0)
-	}
-	initLog()
 	rpcRegister()
 	rpcStartServer()
 }
@@ -33,9 +26,12 @@ func rpcRegister()  {
 
 // start rpc server
 func rpcStartServer()  {
+	log := containers.Log
+	cfg := containers.Cfg
+
 	cert, err := tls.LoadX509KeyPair("cert/server.pem", "cert/server.key")
 	if err != nil {
-		log.Error(err.Error())
+		log.Errorln(err.Error())
 		os.Exit(1)
 	}
 

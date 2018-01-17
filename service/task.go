@@ -58,6 +58,7 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.Gi
 func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error {
 	gitParams, err := t.validateParams(args)
 	if err != nil {
+		containers.Log.Error("agent task service add task error: "+err.Error())
 		return err
 	}
 
@@ -65,9 +66,11 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error 
 	path := args["path"].(string)
 	err = containers.Tasks.Add(taskLogId, path, gitParams)
 	if err != nil {
+		containers.Log.Error("agent task service add task error: "+err.Error())
 		return err
 	}
 
+	containers.Log.Info("agent task service add task "+taskLogId+" success")
 	return nil
 }
 
@@ -75,6 +78,7 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error 
 func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	_, err := g.validateParams(args)
 	if err != nil {
+		containers.Log.Error("agent service task status error: "+err.Error())
 		return err
 	}
 
@@ -82,6 +86,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 
 	taskMessage, err := containers.Tasks.GetTask(taskLogId)
 	if err != nil {
+		containers.Log.Error("agent task service status error: "+err.Error())
 		return err
 	}
 
@@ -95,6 +100,8 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	resByte, _ := json.Marshal(resMap)
 	*reply = string(resByte)
 
+	containers.Log.Info("task "+taskLogId+" status "+string(resByte))
+
 	return nil
 }
 
@@ -102,11 +109,14 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 func (g *ServiceTask) Delete(args map[string]interface{}, reply *string) error {
 	_, err := g.validateParams(args)
 	if err != nil {
+		containers.Log.Error("agent task service delete error: "+err.Error())
 		return err
 	}
 
 	taskLogId := args["task_log_id"].(string)
 	containers.Tasks.Delete(taskLogId)
+
+	containers.Log.Info("agent task service detele task "+taskLogId+" success")
 
 	return nil
 }
