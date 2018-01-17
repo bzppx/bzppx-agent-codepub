@@ -34,6 +34,7 @@ type TaskMessage struct {
 	IsSuccess int
 	GitX utils.GitXParams
 	Result string
+	CommitId string
 }
 
 // add a task message
@@ -60,6 +61,7 @@ func (t *Task) add(taskLogId string, path string, gitX utils.GitXParams) error {
 		IsSuccess: Task_Failed,
 		GitX: gitX,
 		Result: "",
+		CommitId: "",
 	}
 
 	t.TaskMessages = append(t.TaskMessages, taskMsg)
@@ -106,13 +108,14 @@ func (t *Task) Start(taskLogId string) (err error) {
 		IsSuccess: taskMessage.IsSuccess,
 		GitX: taskMessage.GitX,
 		Result: taskMessage.Result,
+		CommitId: taskMessage.CommitId,
 	}
 	
 	return t.update(newTaskMessage)
 }
 
 // task start
-func (t *Task) End(taskLogId string, isSuccess int, Result string) (err error) {
+func (t *Task) End(taskLogId string, isSuccess int, result string, commitId string) (err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	
@@ -127,7 +130,8 @@ func (t *Task) End(taskLogId string, isSuccess int, Result string) (err error) {
 		Status:Task_Status_End,
 		IsSuccess: isSuccess,
 		GitX: taskMessage.GitX,
-		Result: Result,
+		Result: result,
+		CommitId: commitId,
 	}
 	
 	return t.update(newTaskMessage)
@@ -157,6 +161,7 @@ func (t *Task) update(task *TaskMessage) error {
 			taskMessage.IsSuccess = task.IsSuccess
 			taskMessage.GitX = task.GitX
 			taskMessage.Result = task.Result
+			taskMessage.CommitId = task.CommitId
 		}
 	}
 	if !isExists {

@@ -31,11 +31,11 @@ func (w *Worker) Task() {
 					}
 				}()
 				// start publish code
-				err := utils.NewGitX().Publish(task.GitX)
+				commitId, err := utils.NewGitX().Publish(task.GitX)
 				if err != nil {
-					Tasks.End(task.TaskLogId, Task_Failed, err.Error())
+					Tasks.End(task.TaskLogId, Task_Failed, err.Error(), commitId)
 				}else {
-					Tasks.End(task.TaskLogId, Task_Success, "success")
+					Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
 				}
 			}()
 		}

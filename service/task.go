@@ -89,6 +89,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 		"status": strconv.Itoa(taskMessage.Status),
 		"is_success": strconv.Itoa(taskMessage.IsSuccess),
 		"result": taskMessage.Result,
+		"commit_id": taskMessage.CommitId,
 	}
 
 	resByte, _ := json.Marshal(resMap)

@@ -126,15 +126,14 @@ func (g *GitX) CreateBranchName(params GitXParams) (name string, err error) {
 }
 
 // 发布代码
-func (g *GitX) Publish(params GitXParams) (err error) {
-	//params := *paramsPointer
+func (g *GitX) Publish(params GitXParams) (commitId string, err error) {
 	if NewFile().PathIsEmpty(params.Path) {
 		err = nil
 		_, err = g.Clone(params)
 	} else {
 		p := filepath.Join(params.Path, ".git")
 		if _, err := os.Stat(p); err != nil || NewFile().PathIsEmpty(p) {
-			return errors.New("Gitx publish error: target path is not a git repository!")
+			return "", errors.New("Gitx publish error: target path is not a git repository!")
 		}
 		_, err = git.PlainOpen(params.Path)
 		if err == nil {
@@ -155,6 +154,12 @@ func (g *GitX) Publish(params GitXParams) (err error) {
 		return
 	}
 	err = g.CleanBranch(params)
+	if err != nil {
+		return
+	}
+	// get commit_id
+	commitId, err = g.LastCommitId(params)
+
 	return
 }
 
