@@ -100,7 +100,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	resByte, _ := json.Marshal(resMap)
 	*reply = string(resByte)
 
-	containers.Log.Info("task "+taskLogId+" status "+string(resByte))
+	containers.Log.Infof("task "+taskLogId+" status %s", *reply)
 
 	return nil
 }

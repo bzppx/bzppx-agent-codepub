@@ -1,8 +1,9 @@
 package containers
 
 import (
-	"time"
 	"bzppx-agent-codepub/utils"
+	"sync"
+	"time"
 )
 
 var Workers = Worker{}
@@ -12,6 +13,7 @@ type Worker struct {
 }
 
 func (w *Worker) Task() {
+	var wait sync.WaitGroup
 	for {
 		tasks := Tasks.GetDefaultTasks()
 		if len(tasks) == 0 {
@@ -22,12 +24,14 @@ func (w *Worker) Task() {
 			if pathIsHave {
 				continue
 			}
+			wait.Add(1)
 			go func() {
 				defer func() {
 					e := recover()
 					if e != nil {
 						Log.Error(e)
 					}
+					wait.Done()
 				}()
 				// start publish code
 				commitId, err := utils.NewGitX().Publish(task.GitX)
@@ -40,6 +44,7 @@ func (w *Worker) Task() {
 				}
 			}()
 		}
+		wait.Wait()
 		time.Sleep(2 * time.Second)
 	}
 }
