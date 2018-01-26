@@ -228,7 +228,9 @@ func (g *GitX) Fetch(params GitXParams) (r *git.Repository, err error) {
 		URLs:  []string{params.Url},
 		Fetch: []config.RefSpec{"+refs/heads/*:refs/remotes/" + git.DefaultRemoteName + "/*"},
 	}
-	rconfig.Remotes[git.DefaultRemoteName] = remoteConfig
+	rconfig.Remotes = map[string]*config.RemoteConfig{
+		git.DefaultRemoteName: remoteConfig,
+	}
 	r.Storer.SetConfig(rconfig)
 	var opt git.FetchOptions
 	if opt, err = g.FetchOptions(params); err != nil {
