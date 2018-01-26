@@ -6,6 +6,7 @@ import (
 	"bzppx-agent-codepub/containers"
 	"strconv"
 	"encoding/json"
+	"github.com/snail007/mini-logger"
 )
 
 type ServiceTask struct {
@@ -56,9 +57,10 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.Gi
 
 // 创建发布任务
 func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error {
+	log := containers.Log
 	gitParams, err := t.validateParams(args)
 	if err != nil {
-		containers.Log.Error("agent task service add task error: "+err.Error())
+		log.Error("agent task service add task error: "+err.Error())
 		return err
 	}
 
@@ -66,19 +68,20 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error 
 	path := args["path"].(string)
 	err = containers.Tasks.Add(taskLogId, path, gitParams)
 	if err != nil {
-		containers.Log.Error("agent task service add task error: "+err.Error())
+		log.Error("agent task service add task error: "+err.Error())
 		return err
 	}
 
-	containers.Log.Info("agent task service add task "+taskLogId+" success")
+	log.Info("agent task service add task "+taskLogId+" success")
 	return nil
 }
 
 // 获取发布任务执行结果
 func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
+	log := containers.Log
 	_, err := g.validateParams(args)
 	if err != nil {
-		containers.Log.Error("agent service task status error: "+err.Error())
+		log.Error("agent service task status error: "+err.Error())
 		return err
 	}
 
@@ -86,7 +89,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 
 	taskMessage, err := containers.Tasks.GetTask(taskLogId)
 	if err != nil {
-		containers.Log.Error("agent task service status error: "+err.Error())
+		log.Error("agent task service status error: "+err.Error())
 		return err
 	}
 
@@ -100,7 +103,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	resByte, _ := json.Marshal(resMap)
 	*reply = string(resByte)
 
-	containers.Log.Infof("task "+taskLogId+" status %s", *reply)
+	log.With(logger.Fields(resMap)).Infof("agent task %s status", taskLogId)
 
 	return nil
 }

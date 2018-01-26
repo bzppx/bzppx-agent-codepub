@@ -1,12 +1,11 @@
 package main
 
 import (
-	_ "bzppx-agent-codepub/containers"
+	"bzppx-agent-codepub/containers"
 	"net/rpc"
 	"bzppx-agent-codepub/service"
 	"crypto/tls"
 	"os"
-	"bzppx-agent-codepub/containers"
 )
 
 // rpc server start
