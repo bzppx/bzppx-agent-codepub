@@ -61,7 +61,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 			}
 		}()
 		cmd := c.command(fileName)
-		cmd.Stdout = &out
+		cmd.Stderr = &out
 		select {
 		case outChan<-cmd.Run():
 			return
@@ -75,7 +75,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 	if (err != nil) && (err.Error() == "command exec timeout") {
 		return err
 	}
-	if (err != nil) && (out.String()!= "") {
+	if (err != nil) && (out.String() != "") {
 		return errors.New(out.String()+","+err.Error())
 	}
 	return
@@ -97,9 +97,11 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 		}()
 		cmd := c.command(fileName)
 		outChan := make(chan error, 1)
+		var out bytes.Buffer
+		cmd.Stderr = &out
 		select {
 		case outChan<-cmd.Run():
-			log.Println("agent asy exec command error: "+err.Error())
+			log.Println("agent asy exec command error: "+out.String())
 			return
 		case <-time.After(time.Duration(commandXParams.CommandExecTimeout) * time.Second):
 			cmd.Process.Kill()
