@@ -33,20 +33,22 @@ type TaskMessage struct {
 	Status int
 	IsSuccess int
 	GitX utils.GitXParams
+	PreCommandX utils.CommandXParams
+	PostCommandX utils.CommandXParams
 	Result string
 	CommitId string
 }
 
 // add a task message
-func (t *Task) Add(taskLogId string, path string, gitX utils.GitXParams) error {
+func (t *Task) Add(taskLogId string, path string, gitX utils.GitXParams, preCommandX utils.CommandXParams, postCommandX utils.CommandXParams) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	return t.add(taskLogId, path, gitX)
+	return t.add(taskLogId, path, gitX, preCommandX, postCommandX)
 }
 
 // add task
-func (t *Task) add(taskLogId string, path string, gitX utils.GitXParams) error {
+func (t *Task) add(taskLogId string, path string, gitX utils.GitXParams, preCommandX utils.CommandXParams, postCommandX utils.CommandXParams) error {
 
 	taskMessages := t.TaskMessages
 	for _, taskMessage := range taskMessages {
@@ -60,6 +62,8 @@ func (t *Task) add(taskLogId string, path string, gitX utils.GitXParams) error {
 		Status: Task_Status_Default,
 		IsSuccess: Task_Failed,
 		GitX: gitX,
+		PreCommandX: preCommandX,
+		PostCommandX: postCommandX,
 		Result: "",
 		CommitId: "",
 	}
@@ -107,6 +111,8 @@ func (t *Task) Start(taskLogId string) (err error) {
 		Status: Task_Status_Starting,
 		IsSuccess: taskMessage.IsSuccess,
 		GitX: taskMessage.GitX,
+		PreCommandX: taskMessage.PreCommandX,
+		PostCommandX: taskMessage.PostCommandX,
 		Result: taskMessage.Result,
 		CommitId: taskMessage.CommitId,
 	}
@@ -130,6 +136,8 @@ func (t *Task) End(taskLogId string, isSuccess int, result string, commitId stri
 		Status:Task_Status_End,
 		IsSuccess: isSuccess,
 		GitX: taskMessage.GitX,
+		PreCommandX: taskMessage.PreCommandX,
+		PostCommandX: taskMessage.PostCommandX,
 		Result: result,
 		CommitId: commitId,
 	}
@@ -160,6 +168,8 @@ func (t *Task) update(task *TaskMessage) error {
 			taskMessage.Status = task.Status
 			taskMessage.IsSuccess = task.IsSuccess
 			taskMessage.GitX = task.GitX
+			taskMessage.PreCommandX = task.PreCommandX
+			taskMessage.PostCommandX = task.PostCommandX
 			taskMessage.Result = task.Result
 			taskMessage.CommitId = task.CommitId
 		}

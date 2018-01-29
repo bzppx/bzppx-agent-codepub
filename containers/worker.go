@@ -35,15 +35,31 @@ func (w *Worker) Task() {
 						Tasks.End(task.TaskLogId, Task_Failed, "goroutine runtime error", "")
 					}
 				}()
+
+				// start exec pre_command
+				err := utils.NewCommandX().Exec(task.PreCommandX)
+				if err != nil {
+					Log.Error("agent task "+task.TaskLogId+" exec pre_command faild: "+err.Error())
+					Tasks.End(task.TaskLogId, Task_Failed, "exec pre_command error: "+err.Error(), "")
+					return
+				}
 				// start publish code
 				commitId, err := utils.NewGitX().Publish(task.GitX)
 				if err != nil {
 					Log.Error("agent task "+task.TaskLogId+" publish faild: "+err.Error())
-					Tasks.End(task.TaskLogId, Task_Failed, err.Error(), commitId)
-				}else {
-					Log.Info("agent task "+task.TaskLogId+" publish success, commit_id: "+commitId)
-					Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
+					Tasks.End(task.TaskLogId, Task_Failed, "publish code error: "+err.Error(), commitId)
+					return
 				}
+				// start public post_command
+				err = utils.NewCommandX().Exec(task.PostCommandX)
+				if err != nil {
+					Log.Error("agent task "+task.TaskLogId+" exec post_command faild: "+err.Error())
+					Tasks.End(task.TaskLogId, Task_Failed, "exec post_command error: "+err.Error(), "")
+					return
+				}
+
+				Log.Info("agent task "+task.TaskLogId+" publish success, commit_id: "+commitId)
+				Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
 			}()
 		}
 

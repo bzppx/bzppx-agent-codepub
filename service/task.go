@@ -10,41 +10,51 @@ import (
 )
 
 type ServiceTask struct {
+	gitXParams utils.GitXParams
+	preCommandXParams utils.CommandXParams
+	postCommandXParams utils.CommandXParams
+}
 
+var taskParams = []string{
+	"task_log_id", // task_log_id
+	"url", // git 仓库地址
+	"ssh_key", //ssh_key
+	"ssh_key_salt", // ssh_key_salt
+	"path", // 代码目录
+	"branch", // 发布分支或 commit_id
+	"username", // 用户名
+	"password", // 密码
+	"pre_command", // 前置命令
+	"pre_command_exec_type",// 前置命令执行方式
+	"pre_command_exec_timeout", // 前置命令超时时间
+	"post_command", // 后置命令
+	"post_command_exec_type", // 后置命令执行方式
+	"post_command_exec_timeout", // 后置命令超时时间
+	"exec_user", // 执行命令用户
 }
 
 func NewServiceTask() *ServiceTask {
-	return &ServiceTask{}
+	return &ServiceTask{
+		gitXParams: utils.GitXParams{},
+		preCommandXParams: utils.CommandXParams{},
+		postCommandXParams: utils.CommandXParams{},
+	}
 }
 
 // 验证参数
-func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.GitXParams, err error) {
-	if _, ok := args["task_log_id"]; !ok {
-		return gitX, errors.New("args params task_id requied")
-	}
-	if _, ok := args["url"]; !ok {
-		return gitX, errors.New("args params url requied")
-	}
-	if _, ok := args["ssh_key"]; !ok {
-		return gitX, errors.New("args params ssh_key requied")
-	}
-	if _, ok := args["ssh_key_salt"]; !ok {
-		return gitX, errors.New("args params ssh_key_salt requied")
-	}
-	if _, ok := args["path"]; !ok {
-		return gitX, errors.New("args params path requied")
-	}
-	if _, ok := args["branch"]; !ok {
-		return gitX, errors.New("args params branch requied")
-	}
-	if _, ok := args["username"]; !ok {
-		return gitX, errors.New("args params username requied")
-	}
-	if _, ok := args["password"]; !ok {
-		return gitX, errors.New("args params password requied")
-	}
+func (t *ServiceTask) validateParams(args map[string]interface{}) error {
 
-	return utils.GitXParams {
+	for _, taskParam := range taskParams {
+		if _, ok := args[taskParam]; !ok {
+			return errors.New("args params "+taskParam+" requied")
+		}
+	}
+	preCommandType, _ := strconv.Atoi(args["pre_command_exec_type"].(string))
+	preCommandTimeout, _ := strconv.Atoi(args["pre_command_exec_timeout"].(string))
+	postCommandType, _ := strconv.Atoi(args["post_command_exec_type"].(string))
+	postCommandTimeout, _ := strconv.Atoi(args["post_command_exec_timeout"].(string))
+
+	t.gitXParams = utils.GitXParams {
 		Url: args["url"].(string),
 		SshKey: args["ssh_key"].(string),
 		SshKeySalt: args["ssh_key_salt"].(string),
@@ -52,13 +62,31 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) (gitX utils.Gi
 		Branch: args["branch"].(string),
 		Username: args["username"].(string),
 		Password: args["password"].(string),
-	}, nil
+	}
+
+	t.preCommandXParams = utils.CommandXParams {
+		Path: args["path"].(string),
+		Command: args["pre_command"].(string),
+		CommandExecType: preCommandType,
+		CommandExecTimeout: preCommandTimeout,
+		ExecUser: args["exec_user"].(string),
+	}
+
+	t.postCommandXParams = utils.CommandXParams {
+		Path: args["path"].(string),
+		Command: args["post_command"].(string),
+		CommandExecType: postCommandType,
+		CommandExecTimeout: postCommandTimeout,
+		ExecUser: args["exec_user"].(string),
+	}
+
+	return nil
 }
 
 // 创建发布任务
 func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error {
 	log := containers.Log
-	gitParams, err := t.validateParams(args)
+	err := t.validateParams(args)
 	if err != nil {
 		log.Error("agent task service add task error: "+err.Error())
 		return err
@@ -66,7 +94,7 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error 
 
 	taskLogId := args["task_log_id"].(string)
 	path := args["path"].(string)
-	err = containers.Tasks.Add(taskLogId, path, gitParams)
+	err = containers.Tasks.Add(taskLogId, path, t.gitXParams, t.preCommandXParams, t.postCommandXParams)
 	if err != nil {
 		log.Error("agent task service add task error: "+err.Error())
 		return err
@@ -79,7 +107,7 @@ func (t *ServiceTask) Publish(args map[string]interface{}, reply *string) error 
 // 获取发布任务执行结果
 func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	log := containers.Log
-	_, err := g.validateParams(args)
+	err := g.validateParams(args)
 	if err != nil {
 		log.Error("agent service task status error: "+err.Error())
 		return err
@@ -110,7 +138,7 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 
 // 确认完成，删除任务记录
 func (g *ServiceTask) Delete(args map[string]interface{}, reply *string) error {
-	_, err := g.validateParams(args)
+	err := g.validateParams(args)
 	if err != nil {
 		containers.Log.Error("agent task service delete error: "+err.Error())
 		return err
