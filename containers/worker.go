@@ -36,7 +36,6 @@ func (w *Worker) Task() {
 					}
 				}()
 
-				Log.Info(task.PreCommandX.Command)
 				// start exec pre_command
 				err := utils.NewCommandX().Exec(task.PreCommandX)
 				if err != nil {

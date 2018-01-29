@@ -131,7 +131,9 @@ func (g *ServiceTask) Status(args map[string]interface{}, reply *string) error {
 	resByte, _ := json.Marshal(resMap)
 	*reply = string(resByte)
 
-	log.With(logger.Fields(resMap)).Infof("agent task %s status", taskLogId)
+	if taskMessage.CommitId != "" {
+		log.With(logger.Fields(resMap)).Infof("agent task %s status", taskLogId)
+	}
 
 	return nil
 }
