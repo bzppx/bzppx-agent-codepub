@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"log"
 	"runtime"
+	"bytes"
 )
 
 var branchNamePrefix = "refs/heads/auto-"
@@ -134,10 +135,12 @@ func (g *GitX) Publish(params GitXParams) (commitId string, err error) {
 	defer func() {
 		go func() {
 			if runtime.GOOS != "windows" {
-				cmd := exec.Command("chown -R "+params.DirUser+" "+params.Path)
+				cmd := exec.Command("chown", "-R", params.DirUser, params.Path)
+				var out bytes.Buffer
+				cmd.Stderr = &out
 				err = cmd.Run()
 				if err != nil {
-					log.Println(err.Error())
+					log.Println(out.String())
 				}
 			}
 		}()
