@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log"
 	"fmt"
+	"bytes"
 )
 
 func NewCommandX() *CommandX {
@@ -51,6 +52,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 		return
 	}
 	outChan := make(chan error, 1)
+	var out bytes.Buffer
 	go func() {
 		defer func() {
 			rec := recover()
@@ -59,6 +61,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 			}
 		}()
 		cmd := c.command(fileName)
+		cmd.Stdout = &out
 		select {
 		case outChan<-cmd.Run():
 			return
@@ -69,6 +72,12 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 		}
 	}()
 	err = <-outChan
+	if (err != nil) && (err.Error() == "command exec timeout") {
+		return err
+	}
+	if (err != nil) && (out.String()!= "") {
+		return errors.New(out.String()+","+err.Error())
+	}
 	return
 }
 
