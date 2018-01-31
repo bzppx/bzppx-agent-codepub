@@ -50,7 +50,7 @@ func (w *Worker) Task() {
 					Tasks.End(task.TaskLogId, Task_Failed, "publish code error: "+err.Error(), commitId)
 					return
 				}
-				// start public post_command
+				// start exec post_command
 				err = utils.NewCommandX().Exec(task.PostCommandX)
 				if err != nil {
 					Log.Error("agent task "+task.TaskLogId+" exec post_command faild: "+err.Error())
