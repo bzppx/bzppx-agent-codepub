@@ -24,6 +24,7 @@ var taskParams = []string{
 	"branch", // 发布分支或 commit_id
 	"username", // 用户名
 	"password", // 密码
+	"dir_user", // 目录权限用户
 	"pre_command", // 前置命令
 	"pre_command_exec_type",// 前置命令执行方式
 	"pre_command_exec_timeout", // 前置命令超时时间
@@ -61,6 +62,7 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) error {
 		Branch: args["branch"].(string),
 		Username: args["username"].(string),
 		Password: args["password"].(string),
+		DirUser: args["dir_user"].(string),
 	}
 
 	t.preCommandXParams = utils.CommandXParams {

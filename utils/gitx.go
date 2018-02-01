@@ -18,6 +18,9 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
+	"os/exec"
+	"log"
+	"runtime"
 )
 
 var branchNamePrefix = "refs/heads/auto-"
@@ -36,6 +39,7 @@ type GitXParams struct {
 	Branch     string `json:"branch"`
 	Username   string `json:"username"`
 	Password   string `json:"password"`
+	DirUser    string `json:"dir_user"`
 }
 
 // 验证参数合法性
@@ -127,6 +131,18 @@ func (g *GitX) CreateBranchName(params GitXParams) (name string, err error) {
 
 // 发布代码
 func (g *GitX) Publish(params GitXParams) (commitId string, err error) {
+	defer func() {
+		go func() {
+			if runtime.GOOS != "windows" {
+				cmd := exec.Command("chown -R "+params.DirUser+" "+params.Path)
+				err = cmd.Run()
+				if err != nil {
+					log.Println(err.Error())
+				}
+			}
+		}()
+	}()
+
 	if NewFile().PathIsEmpty(params.Path) {
 		err = nil
 		_, err = g.Clone(params)
