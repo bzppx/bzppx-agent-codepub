@@ -36,13 +36,22 @@ func (w *Worker) Task() {
 					}
 				}()
 
+				Log.Info("agent task "+task.TaskLogId+" publish start")
+
 				// start exec pre_command
-				err := utils.NewCommandX().Exec(task.PreCommandX)
-				if err != nil {
-					Log.Error("agent task "+task.TaskLogId+" exec pre_command faild: "+err.Error())
-					Tasks.End(task.TaskLogId, Task_Failed, "exec pre_command error: "+err.Error(), "")
-					return
+				if task.PreCommandX.Command != "" {
+					err := utils.NewCommandX().Exec(task.PreCommandX)
+					if err != nil {
+						Log.Error("agent task "+task.TaskLogId+" exec pre_command faild: "+err.Error())
+						if task.PreCommandX.CommandExecType == utils.Command_ExecType_SyncErrorStop {
+							Tasks.End(task.TaskLogId, Task_Failed, "exec pre_command error: "+err.Error(), "")
+							return
+						}
+					} else {
+						Log.Info("agent task "+task.TaskLogId+" exec pre_command success")
+					}
 				}
+
 				// start publish code
 				commitId, err := utils.NewGitX().Publish(task.GitX)
 				if err != nil {
@@ -50,16 +59,25 @@ func (w *Worker) Task() {
 					Tasks.End(task.TaskLogId, Task_Failed, "publish code error: "+err.Error(), commitId)
 					return
 				}
+				Log.Info("agent task "+task.TaskLogId+" publish code success, commit_id: "+commitId)
+
 				// start exec post_command
-				err = utils.NewCommandX().Exec(task.PostCommandX)
-				if err != nil {
-					Log.Error("agent task "+task.TaskLogId+" exec post_command faild: "+err.Error())
-					Tasks.End(task.TaskLogId, Task_Failed, "exec post_command error: "+err.Error(), "")
-					return
+				if task.PostCommandX.Command != "" {
+					err = utils.NewCommandX().Exec(task.PostCommandX)
+					if err != nil {
+						Log.Error("agent task "+task.TaskLogId+" exec post_command faild: "+err.Error())
+						if task.PostCommandX.CommandExecType == utils.Command_ExecType_SyncErrorStop {
+							Tasks.End(task.TaskLogId, Task_Failed, "exec post_command error: "+err.Error(), "")
+							return
+						}
+					}else {
+						Log.Info("agent task "+task.TaskLogId+" exec post_command success")
+					}
 				}
 
-				Log.Info("agent task "+task.TaskLogId+" publish success, commit_id: "+commitId)
 				Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
+
+				Log.Info("agent task "+task.TaskLogId+" publish end")
 			}()
 		}
 
