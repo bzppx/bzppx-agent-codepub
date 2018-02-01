@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"runtime"
 	"time"
-	"bzppx-agent-codepub/containers"
 )
 
 func NewCommandX() *CommandX {
@@ -106,11 +105,11 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 		}
 		err = <-outChan
 		if (err != nil) && (err.Error() == "asy exec command exec timeout") {
-			containers.Log.Error(err.Error())
+			log.Println(err.Error())
 			return
 		}
 		if (err != nil) && (out.String() != "") {
-			containers.Log.Error("asy exec command error:"+out.String() + "," + err.Error())
+			log.Println("asy exec command error:"+out.String() + "," + err.Error())
 			return
 		}
 	}()
@@ -126,7 +125,7 @@ func (c *CommandX) command(fileName string, path string) (cmd *exec.Cmd) {
 	} else {
 		cmd = exec.Command("/bin/bash", fileName)
 	}
-	cmd.Dir(path)
+	cmd.Dir = path
 	return
 }
 
