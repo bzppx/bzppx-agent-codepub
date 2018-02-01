@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"time"
+	"os"
 )
 
 func NewCommandX() *CommandX {
@@ -53,6 +54,10 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 	var out bytes.Buffer
 	go func() {
 		defer func() {
+			err = os.Remove(fileName)
+			if err != nil {
+				log.Println("remove file error:"+err.Error())
+			}
 			rec := recover()
 			if rec != nil {
 				outChan <- fmt.Errorf("%v", rec)
@@ -88,6 +93,10 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 	}
 	go func() {
 		defer func() {
+			err = os.Remove(fileName)
+			if err != nil {
+				log.Println("remove file error:"+err.Error())
+			}
 			rec := recover()
 			if rec != nil {
 				log.Panicf("%v", rec)
@@ -138,7 +147,15 @@ func (c *CommandX) createTmpShellFile(content string) (tmpFile string, err error
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		file.Close()
+		if runtime.GOOS == "windows" {
+			tmpFile = file.Name() + ".cmd"
+		}else {
+			tmpFile = file.Name() + ".sh"
+		}
+		err = os.Rename(file.Name(), tmpFile)
+	}()
 
 	file.Chmod(0777)
 	if runtime.GOOS == "windows" {
@@ -148,9 +165,6 @@ func (c *CommandX) createTmpShellFile(content string) (tmpFile string, err error
 		file.WriteString("set -e\n")
 	}
 	_, err = file.WriteString(content)
-	if err != nil {
-		return
-	}
 
-	return file.Name(), nil
+	return
 }
