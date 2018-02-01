@@ -140,6 +140,7 @@ func (c *CommandX) createTmpShellFile(path string, content string) (tmpFile stri
 		}
 	}else {
 		file.WriteString("#!/bin/bash\n")
+		file.WriteString("set -e\n")
 	}
 	file.WriteString("cd "+path+" \n")
 	_, err = file.WriteString(content)
