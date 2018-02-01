@@ -46,7 +46,7 @@ func (c *CommandX) Exec(commandXParams CommandXParams) (err error) {
 // 同步执行, 等待结果返回
 func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 
-	fileName, err := c.createTmpShellFile(commandXParams.Path, commandXParams.Command)
+	fileName, err := c.createTmpShellFile(commandXParams.Command)
 	if err != nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 				outChan <- fmt.Errorf("%v", rec)
 			}
 		}()
-		cmd := c.command(fileName)
+		cmd := c.command(fileName, commandXParams.Path)
 		cmd.Stderr = &out
 		select {
 		case outChan<-cmd.Run():
@@ -83,7 +83,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 // 异步执行，不返回结果
 func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 
-	fileName, err := c.createTmpShellFile(commandXParams.Path, commandXParams.Command)
+	fileName, err := c.createTmpShellFile(commandXParams.Command)
 	if err != nil {
 		return
 	}
@@ -94,7 +94,7 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 				log.Panicf("%v", rec)
 			}
 		}()
-		cmd := c.command(fileName)
+		cmd := c.command(fileName, commandXParams.Path)
 		outChan := make(chan error, 1)
 		var out bytes.Buffer
 		cmd.Stderr = &out
@@ -112,20 +112,22 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 }
 
 // 获取 command
-func (c *CommandX) command(fileName string) (cmd *exec.Cmd) {
-
+// filename 文件名
+// path 执行命令的目录
+func (c *CommandX) command(fileName string, path string) (cmd *exec.Cmd) {
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command(fileName)
 	} else {
 		cmd = exec.Command("/bin/bash", fileName)
 	}
+	cmd.Dir(path)
 	return
 }
 
 // 创建临时的 shell 脚本文件
 // path 脚本执行目录
 // content 创建的脚本内容
-func (c *CommandX) createTmpShellFile(path string, content string) (tmpFile string, err error) {
+func (c *CommandX) createTmpShellFile(content string) (tmpFile string, err error) {
 
 	file, err := ioutil.TempFile("", "codepub_tmp")
 	if err != nil {
@@ -135,14 +137,11 @@ func (c *CommandX) createTmpShellFile(path string, content string) (tmpFile stri
 
 	file.Chmod(0777)
 	if runtime.GOOS == "windows" {
-		if path[1:2] == ":" {
-			file.WriteString(path[0:2]+"\n")
-		}
+
 	}else {
 		file.WriteString("#!/bin/bash\n")
 		file.WriteString("set -e\n")
 	}
-	file.WriteString("cd "+path+" \n")
 	_, err = file.WriteString(content)
 	if err != nil {
 		return
