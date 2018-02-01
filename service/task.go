@@ -30,7 +30,6 @@ var taskParams = []string{
 	"post_command", // 后置命令
 	"post_command_exec_type", // 后置命令执行方式
 	"post_command_exec_timeout", // 后置命令超时时间
-	"exec_user", // 执行命令用户
 }
 
 func NewServiceTask() *ServiceTask {
@@ -69,7 +68,6 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) error {
 		Command: args["pre_command"].(string),
 		CommandExecType: preCommandType,
 		CommandExecTimeout: preCommandTimeout,
-		ExecUser: args["exec_user"].(string),
 	}
 
 	t.postCommandXParams = utils.CommandXParams {
@@ -77,7 +75,6 @@ func (t *ServiceTask) validateParams(args map[string]interface{}) error {
 		Command: args["post_command"].(string),
 		CommandExecType: postCommandType,
 		CommandExecTimeout: postCommandTimeout,
-		ExecUser: args["exec_user"].(string),
 	}
 
 	return nil

@@ -28,7 +28,6 @@ type CommandXParams struct {
 	Command string
 	CommandExecType int
 	CommandExecTimeout int
-	ExecUser string
 }
 
 // 执行命令
