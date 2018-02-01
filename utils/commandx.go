@@ -1,14 +1,14 @@
 package utils
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os/exec"
 	"runtime"
 	"time"
-	"errors"
-	"log"
-	"fmt"
-	"bytes"
 )
 
 func NewCommandX() *CommandX {
@@ -16,17 +16,16 @@ func NewCommandX() *CommandX {
 }
 
 type CommandX struct {
-
 }
 
-const Command_ExecType_SyncErrorStop = 1; // 同步执行，遇到错误停止
-const Command_ExecType_SyncErrorAccess = 2; // 同步执行，遇到错误继续
-const Command_ExecType_Asy = 3; // 异步执行
+const Command_ExecType_SyncErrorStop = 1   // 同步执行，遇到错误停止
+const Command_ExecType_SyncErrorAccess = 2 // 同步执行，遇到错误继续
+const Command_ExecType_Asy = 3             // 异步执行
 
 type CommandXParams struct {
-	Path string
-	Command string
-	CommandExecType int
+	Path               string
+	Command            string
+	CommandExecType    int
 	CommandExecTimeout int
 }
 
@@ -37,7 +36,7 @@ func (c *CommandX) Exec(commandXParams CommandXParams) (err error) {
 	}
 	if commandXParams.CommandExecType == Command_ExecType_Asy {
 		err = c.asyExec(commandXParams)
-	}else {
+	} else {
 		err = c.syncExec(commandXParams)
 	}
 	return
@@ -62,7 +61,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 		cmd := c.command(fileName)
 		cmd.Stderr = &out
 		select {
-		case outChan<-cmd.Run():
+		case outChan <- cmd.Run():
 			return
 		case <-time.After(time.Duration(commandXParams.CommandExecTimeout) * time.Second):
 			cmd.Process.Kill()
@@ -75,7 +74,7 @@ func (c *CommandX) syncExec(commandXParams CommandXParams) (err error) {
 		return err
 	}
 	if (err != nil) && (out.String() != "") {
-		return errors.New(out.String()+","+err.Error())
+		return errors.New(out.String() + "," + err.Error())
 	}
 	return
 }
@@ -99,8 +98,8 @@ func (c *CommandX) asyExec(commandXParams CommandXParams) (err error) {
 		var out bytes.Buffer
 		cmd.Stderr = &out
 		select {
-		case outChan<-cmd.Run():
-			log.Println("agent asy exec command error: "+out.String())
+		case outChan <- cmd.Run():
+			log.Println("agent asy exec command error: " + out.String())
 			return
 		case <-time.After(time.Duration(commandXParams.CommandExecTimeout) * time.Second):
 			cmd.Process.Kill()
@@ -136,12 +135,13 @@ func (c *CommandX) createTmpShellFile(path string, content string) (tmpFile stri
 	file.Chmod(0777)
 	if runtime.GOOS == "windows" {
 		if path[1:2] == ":" {
-			file.WriteString(path[0:2]+"\n")
+			file.WriteString(path[0:2] + "\n")
 		}
-	}else {
+	} else {
 		file.WriteString("#!/bin/bash\n")
+		file.WriteString("set -e\n")
 	}
-	file.WriteString("cd "+path+" \n")
+	file.WriteString("cd " + path + " \n")
 	_, err = file.WriteString(content)
 	if err != nil {
 		return
