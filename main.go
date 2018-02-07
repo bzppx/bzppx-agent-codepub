@@ -58,7 +58,7 @@ func rpcStartServer()  {
 		}
 		clientToken := string(buf[:n])
 		if clientToken != token {
-			c.Write([]byte("failed"))
+			c.Write([]byte("token error"))
 			continue
 		}else {
 			c.Write([]byte("success"))
