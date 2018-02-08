@@ -27,7 +27,7 @@ func (w *Worker) Task() {
 				Log.Error(err)
 				continue
 			}
-			go func() {
+			go func(task *TaskMessage) {
 				defer func() {
 					e := recover()
 					if e != nil {
@@ -78,7 +78,7 @@ func (w *Worker) Task() {
 				Tasks.End(task.TaskLogId, Task_Success, "success", commitId)
 
 				Log.Info("agent task "+task.TaskLogId+" publish end")
-			}()
+			}(task)
 		}
 
 		time.Sleep(2 * time.Second)
