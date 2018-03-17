@@ -7,3 +7,4 @@
 *.log
 bzppx-agent-codepub
 _client
+release*
