@@ -4,6 +4,10 @@ token = "53d86cc809090ee047cf343fd787888e"
 [rpc]
 listen = ":9091"
 
+[cert]
+key_path = "cert/server.key"
+crt_path = "cert/server.pem"
+
 [log]
 level = ["info","error","debug"]
 dir = "log"

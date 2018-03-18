@@ -27,8 +27,13 @@ func rpcRegister()  {
 func rpcStartServer()  {
 	log := containers.Log
 	cfg := containers.Cfg
-
-	cert, err := tls.LoadX509KeyPair("cert/server.pem", "cert/server.key")
+	
+	listenTcp := cfg.GetString("rpc.listen")
+	token := cfg.GetString("access.token")
+	keyFile := cfg.GetString("cert.key_path")
+	crtFile := cfg.GetString("cert.crt_path")
+	
+	cert, err := tls.LoadX509KeyPair(crtFile, keyFile)
 	if err != nil {
 		log.Errorln(err.Error())
 		os.Exit(1)
@@ -37,7 +42,6 @@ func rpcStartServer()  {
 	tlsConf := &tls.Config{
 		Certificates:[]tls.Certificate{cert},
 	}
-	listenTcp := cfg.GetString("rpc.listen")
 	ln, err := tls.Listen("tcp", listenTcp, tlsConf)
 	if err != nil {
 		log.Errorln(err.Error())
@@ -47,7 +51,6 @@ func rpcStartServer()  {
 
 	log.Info("start listen tcp port"+listenTcp)
 
-	token := cfg.GetString("access.token")
 	for {
 		c, err := ln.Accept()
 		buf := make([]byte, 1024)
