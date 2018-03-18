@@ -30,8 +30,8 @@ func rpcStartServer()  {
 	
 	listenTcp := cfg.GetString("rpc.listen")
 	token := cfg.GetString("access.token")
-	keyFile := cfg.GetString("cert.key_path")
-	crtFile := cfg.GetString("cert.crt_path")
+	keyFile := cfg.GetString("cert.key_file")
+	crtFile := cfg.GetString("cert.crt_file")
 	
 	cert, err := tls.LoadX509KeyPair(crtFile, keyFile)
 	if err != nil {
