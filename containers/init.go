@@ -30,6 +30,6 @@ func poster() {
 `+
 "Author: bzppx\r\n"+
 "Vserion: "+version+"\r\n"+
-"Link: github.com/bzppx/bzppx-codepub")
+"Link: github.com/bzppx/bzppx-agent-codepub")
 	fmt.Println(logo)
 }
