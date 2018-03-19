@@ -55,7 +55,7 @@ MaxCount = 3
 
 ## 4. 后台启动 agent
 ```
-nohub ./bzppx-agent-codepub --conf config.toml &
+nohup ./bzppx-agent-codepub --conf config.toml &
 ```
 
 # 开发
