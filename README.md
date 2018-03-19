@@ -25,7 +25,7 @@ codepub-agent 是 codepub 代码发布系统的 agent 部署程序，需配合 c
 ```
 # 创建目录
 $ mkdir codepub-agent
-$ cd codepub
+$ cd codepub-agent
 # 以 linux amd64 为例，下载版本 0.8 压缩包
 $ wget https://github.com/bzppx/bzppx-agent-codepub/releases/download/v0.8/bzppx-agent-codepub-linux-amd64.tar.gz
 # 解压到当前目录
