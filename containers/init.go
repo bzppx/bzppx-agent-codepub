@@ -12,6 +12,7 @@ var (
 // init container
 func init()  {
 	poster()
+	initFlag()
 	initConfig()
 	initLog()
 	go Workers.Task()

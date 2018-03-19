@@ -5,6 +5,8 @@ import (
 	"github.com/snail007/mini-logger"
 	"github.com/snail007/mini-logger/writers/console"
 	"github.com/snail007/mini-logger/writers/files"
+	"os"
+	"log"
 )
 
 var Log logger.MiniLogger
@@ -34,6 +36,13 @@ func initLog() {
 	}), level)
 	CfgF := files.GetDefaultFileConfig()
 	CfgF.LogPath = Cfg.GetString("log.dir")
+	if ok, _ := utils.NewFile().PathIsExists(CfgF.LogPath); !ok {
+		err := os.MkdirAll(CfgF.LogPath, 777)
+		if err != nil {
+			log.Printf("log dir create faild, %s", err.Error())
+			os.Exit(1)
+		}
+	}
 	CfgF.MaxBytes = Cfg.GetInt64("log.FileMaxSize")
 	CfgF.MaxCount = Cfg.GetInt("log.MaxCount")
 	CfgLevels := Cfg.GetStringSlice("log.level")
