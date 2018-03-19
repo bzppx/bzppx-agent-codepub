@@ -11,7 +11,6 @@
 
 # 前言
 codepub-agent 是 codepub 代码发布系统的 agent 部署程序，需配合 codepub 后台使用
-
 地址：https://github.com/bzppx/bzppx-codepub
 
 # 安装
@@ -71,7 +70,7 @@ $ go build ./
 
 # 反馈
 
-欢迎提交意见和代码 https://github.com/bzppx/bzppx-codepub/issues
+欢迎提交意见和代码 https://github.com/bzppx/bzppx-agent-codepub/issues
 
 ## License
 
