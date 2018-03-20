@@ -9,6 +9,7 @@ key_file = "cert/server.key"
 crt_file = "cert/server.pem"
 
 [log]
+console-level="debug"
 level = ["info","error","debug"]
 dir = "log"
 FileMaxSize = 102400000
