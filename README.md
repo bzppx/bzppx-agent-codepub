@@ -64,7 +64,6 @@ nohup ./bzppx-agent-codepub --conf config.toml &
 ```
 $ git clone https://github.com/bzppx/bzppx-agent-codepub.git
 $ cd bzppx-agent-codepub
-$ go get ./...
 $ go build ./
 ```
 

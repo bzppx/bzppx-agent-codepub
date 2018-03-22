@@ -29,4 +29,9 @@ GOOS=linux GOARCH=386 go build ./
 tar -czvf "${RELEASE}/bzppx-agent-codepub-linux-386.tar.gz" bzppx-agent-codepub config.toml cert/ LICENSE README.md
 rm -rf bzppx-agent-codepub
 
+echo 'Start pack mac amd64'
+GOOS=darwin GOARCH=amd64 go build ./
+tar -czvf "${RELEASE}/bzppx-agent-codepub-mac-amd64.tar.gz" bzppx-agent-codepub config.toml cert/ LICENSE README.md
+rm -rf bzppx-agent-codepub
+
 echo 'END'
