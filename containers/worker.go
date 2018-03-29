@@ -15,6 +15,7 @@ func (w *Worker) Task() {
 	for {
 		tasks := Tasks.GetDefaultTasks()
 		if len(tasks) == 0 {
+			time.Sleep(2 * time.Second)
 			continue
 		}
 		for _, task := range tasks {
