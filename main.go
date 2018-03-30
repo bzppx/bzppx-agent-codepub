@@ -6,6 +6,7 @@ import (
 	"bzppx-agent-codepub/service"
 	"crypto/tls"
 	"os"
+	"net"
 )
 
 // rpc server start
@@ -35,7 +36,7 @@ func rpcStartServer()  {
 	
 	cert, err := tls.LoadX509KeyPair(crtFile, keyFile)
 	if err != nil {
-		log.Errorln(err.Error())
+		log.Errorf("agent tls config load error, %s",err.Error())
 		os.Exit(1)
 	}
 
@@ -44,19 +45,23 @@ func rpcStartServer()  {
 	}
 	ln, err := tls.Listen("tcp", listenTcp, tlsConf)
 	if err != nil {
-		log.Errorln(err.Error())
+		log.Errorf("tls listen error, %s", err.Error())
 		os.Exit(1)
 	}
 	defer ln.Close()
 
-	log.Info("start listen tcp port"+listenTcp)
+	log.Info("agent start listen tcp port"+listenTcp)
 
 	for {
 		c, err := ln.Accept()
+		if err != nil {
+			log.Errorf("agent accept error, %s", err.Error())
+			break
+		}
 		buf := make([]byte, 1024)
 		n, err := c.Read(buf)
 		if err != nil {
-			log.Error(err.Error())
+			log.Errorf("conn read error, %s", err.Error())
 			break
 		}
 		clientToken := string(buf[:n])
@@ -67,6 +72,15 @@ func rpcStartServer()  {
 			c.Write([]byte("success"))
 		}
 
-		go rpc.ServeConn(c)
+		go func(c *net.Conn) {
+			defer func() {
+				e := recover()
+				if e != nil {
+					log.Errorf("conn rpc crash, %v", e)
+				}
+			}()
+			rpc.ServeConn(*c)
+		}(&c)
+
 	}
 }

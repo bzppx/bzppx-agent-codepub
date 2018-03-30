@@ -32,8 +32,8 @@ func (w *Worker) Task() {
 				defer func() {
 					e := recover()
 					if e != nil {
-						Log.Error(e)
-						Tasks.End(task.TaskLogId, Task_Failed, "goroutine runtime error", "")
+						Log.Errorf("task handle crash, %v", e)
+						Tasks.End(task.TaskLogId, Task_Failed, "task runtime crash", "")
 					}
 				}()
 
