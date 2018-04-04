@@ -1,86 +1,93 @@
 package main
 
 import (
-	"bzppx-agent-codepub/containers"
+	"bzppx-agent-codepub/app"
 	"net/rpc"
-	"bzppx-agent-codepub/service"
+	"bzppx-agent-codepub/app/service"
 	"crypto/tls"
 	"os"
 	"net"
+	"bzppx-agent-codepub/container"
+	"bzppx-agent-codepub/utils"
 )
 
-// rpc server start
+var (
+	TokenError = []byte("token error")
+	TokenSuccess = []byte("success")
+)
 
 func main()  {
 
-	rpcRegister()
-	rpcStartServer()
-}
+	// register rpc service
+	service.RegisterRpc()
 
-// rpc register
-func rpcRegister()  {
-	for _, ser := range service.RegisterServices {
-		rpc.Register(ser)
-	}
+	// task worker start
+	go container.NewWorker().StartTask()
+
+	// start rpc  server
+	rpcStartServer()
 }
 
 // start rpc server
 func rpcStartServer()  {
-	log := containers.Log
-	cfg := containers.Cfg
-	
-	listenTcp := cfg.GetString("rpc.listen")
-	token := cfg.GetString("access.token")
-	keyFile := cfg.GetString("cert.key_file")
-	crtFile := cfg.GetString("cert.crt_file")
-	
+
+	listenAddr := app.Conf.GetString("rpc.listen")
+	token := app.Conf.GetString("access.token")
+	keyFile := app.Conf.GetString("cert.key_file")
+	crtFile := app.Conf.GetString("cert.crt_file")
+
+	// load cert key
 	cert, err := tls.LoadX509KeyPair(crtFile, keyFile)
 	if err != nil {
-		log.Errorf("agent tls config load error, %s",err.Error())
+		app.Log.Errorf("agent tls config load error, %s", err.Error())
 		os.Exit(1)
 	}
-
 	tlsConf := &tls.Config{
 		Certificates:[]tls.Certificate{cert},
 	}
-	ln, err := tls.Listen("tcp", listenTcp, tlsConf)
+	ln, err := tls.Listen("tcp", listenAddr, tlsConf)
 	if err != nil {
-		log.Errorf("tls listen error, %s", err.Error())
+		app.Log.Errorf("tls listen error, %s", err.Error())
 		os.Exit(1)
 	}
 	defer ln.Close()
 
-	log.Info("agent start listen tcp port"+listenTcp)
+	app.Log.Infof("agent start listen %s", listenAddr)
 
 	for {
-		c, err := ln.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
-			log.Errorf("agent accept error, %s", err.Error())
+			app.Log.Errorf("agent accept error, %s", err.Error())
 			break
 		}
-		buf := make([]byte, 1024)
-		n, err := c.Read(buf)
+		clientToken, err := utils.NewCodec().DecodePack(conn)
 		if err != nil {
-			log.Errorf("conn read error, %s", err.Error())
-			break
-		}
-		clientToken := string(buf[:n])
-		if clientToken != token {
-			c.Write([]byte("token error"))
+			app.Log.Errorf("conn read token error, %s", err.Error())
+			conn.Close()
 			continue
-		}else {
-			c.Write([]byte("success"))
 		}
 
+		// read byte and encode pack
+		var checkRes []byte
+		if clientToken != token {
+			checkRes, err = utils.NewCodec().EncodePack(TokenError)
+			conn.Write(checkRes)
+			conn.Close()
+			continue
+		}else {
+			checkRes, err = utils.NewCodec().EncodePack(TokenSuccess)
+			conn.Write(checkRes)
+		}
+
+		// rpc conn serve
 		go func(c *net.Conn) {
 			defer func() {
 				e := recover()
 				if e != nil {
-					log.Errorf("conn rpc crash, %v", e)
+					app.Log.Errorf("conn rpc crash, %v", e)
 				}
 			}()
 			rpc.ServeConn(*c)
-		}(&c)
-
+		}(&conn)
 	}
 }

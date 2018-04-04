@@ -9,8 +9,13 @@ key_file = "cert/server.key"
 crt_file = "cert/server.pem"
 
 [log]
-console-level="debug"
-level = ["info","error","debug"]
-dir = "log"
-FileMaxSize = 102400000
-MaxCount = 3
+level="debug"
+filename="log/access.log"
+maxSize=1048576
+maxLine=1000000
+dateSlice="d"
+jsonFormat=true
+
+[log.levelFilename]
+error="log/error.log"
+info="log/info.log"

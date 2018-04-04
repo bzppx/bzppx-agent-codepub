@@ -1,12 +1,10 @@
-package containers
+package message
 
 import (
 	"sync"
 	"errors"
 	"bzppx-agent-codepub/utils"
 )
-
-var Tasks = NewTask()
 
 const Task_Status_Default = 0 // 任务未开始
 const Task_Status_Starting = 1 // 任务开始
@@ -15,8 +13,8 @@ const Task_Status_End = 2 // 任务完成
 const Task_Failed = 0 // 执行失败
 const Task_Success = 1 // 执行成功
 
-func NewTask() Task {
-	return Task{
+func NewTask() *Task {
+	return &Task{
 		lock: sync.Mutex{},
 		TaskMessages: []*TaskMessage{},
 	}
