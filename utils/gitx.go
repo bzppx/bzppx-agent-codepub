@@ -9,6 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"bytes"
+	"log"
+	"os/exec"
+	"runtime"
+
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
@@ -18,10 +23,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
-	"os/exec"
-	"log"
-	"runtime"
-	"bytes"
 )
 
 var branchNamePrefix = "refs/heads/auto-"
@@ -350,7 +351,14 @@ func (g *GitX) GetAuth(params GitXParams) (auth transport.AuthMethod, err error)
 		if err != nil {
 			return
 		}
-		auth = &gitssh.PublicKeys{User: "git", Signer: signer}
+		auth = &gitssh.PublicKeys{
+			User:   "git",
+			Signer: signer,
+			HostKeyCallbackHelper: gitssh.HostKeyCallbackHelper{
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			},
+		}
+
 	}
 	return
 }
