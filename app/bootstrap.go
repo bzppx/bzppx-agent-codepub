@@ -1,13 +1,14 @@
 package app
 
 import (
-	"github.com/spf13/viper"
-	"os"
-	"github.com/phachon/go-logger"
-	"strings"
-	"fmt"
-	"github.com/fatih/color"
 	"flag"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/fatih/color"
+	"github.com/phachon/go-logger"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 )
 
 var (
-	Version = "v0.8.2"
+	Version = "v0.8.3"
 
 	Conf = viper.New()
 
@@ -24,11 +25,10 @@ var (
 	AppPath = ""
 
 	RootPath = ""
-
 )
 
 // 启动初始化
-func init()  {
+func init() {
 	initFlag()
 	initConfig()
 	initLog()
@@ -42,7 +42,7 @@ func initFlag() {
 }
 
 // init config
-func initConfig()  {
+func initConfig() {
 
 	if *flagConf == "" {
 		Log.Error("config file not found!")
@@ -53,12 +53,12 @@ func initConfig()  {
 	Conf.SetConfigFile(*flagConf)
 	err := Conf.ReadInConfig()
 	if err != nil {
-		Log.Error("Fatal error config file: "+err.Error())
+		Log.Error("Fatal error config file: " + err.Error())
 		os.Exit(1)
 	}
 
 	file := Conf.ConfigFileUsed()
-	if(file != "") {
+	if file != "" {
 		Log.Info("Use config file: " + file)
 	}
 }
@@ -84,12 +84,12 @@ func initLog() {
 		}
 	}
 	fileConfig := &go_logger.FileConfig{
-		Filename:  Conf.GetString("log.filename"),
-		LevelFileName : levelFilename,
-		MaxSize: Conf.GetInt64("log.maxSize"),
-		MaxLine: Conf.GetInt64("log.maxLine"),
-		DateSlice: Conf.GetString("log.dateSlice"),
-		JsonFormat: Conf.GetBool("log.jsonFormat"),
+		Filename:      Conf.GetString("log.filename"),
+		LevelFileName: levelFilename,
+		MaxSize:       Conf.GetInt64("log.maxSize"),
+		MaxLine:       Conf.GetInt64("log.maxLine"),
+		DateSlice:     Conf.GetString("log.dateSlice"),
+		JsonFormat:    Conf.GetBool("log.jsonFormat"),
 	}
 	Log.Attach("file", Log.LoggerLevel(fileLevelStr), go_logger.NewConfigFile(fileConfig))
 }
@@ -104,9 +104,9 @@ func initPoster() {
 / /__ / /_/ // /_/ //  __// /_/ // /_/ // /_/ / -- / /_/ / / /_/ //  __// / / // /_
 \___/ \____/ \__,_/ \___ / .___/ \__,_//_.___/     \__/\_\ \___,/ \___//_/ /_/ \__/
                         /_/                               /____/
-`+
-		"Author: bzppx\r\n"+
-		"Vserion: "+Version+"\r\n"+
+` +
+		"Author: bzppx\r\n" +
+		"Vserion: " + Version + "\r\n" +
 		"Link: github.com/bzppx/bzppx-agent-codepub")
 	fmt.Println(logo)
 }

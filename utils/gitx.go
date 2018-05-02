@@ -331,7 +331,7 @@ func (g *GitX) GetAuth(params GitXParams) (auth transport.AuthMethod, err error)
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
-			Timeout: 60 * time.Second,
+			Timeout: 30 * time.Minute,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
