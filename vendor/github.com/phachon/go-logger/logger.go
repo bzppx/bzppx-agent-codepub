@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var version = "v1.1"
+var version = "v1.2"
 
 const (
 	LOGGER_LEVEL_EMERGENCY = iota
@@ -28,7 +28,7 @@ type adapterLoggerFunc func() LoggerAbstract
 
 type LoggerAbstract interface {
 	Name() string
-	Init(config *Config) error
+	Init(config Config) error
 	Write(loggerMsg *loggerMessage) error
 	Flush()
 }
@@ -45,6 +45,8 @@ var levelStringMapping = map[int]string{
 	LOGGER_LEVEL_INFO:        "Info",
 	LOGGER_LEVEL_DEBUG:       "Debug",
 }
+
+var defaultLoggerMessageFormat = "%millisecond_format% [%level_string%] %body%"
 
 //Register logger adapter
 func Register(adapterName string, newLog adapterLoggerFunc)  {
@@ -97,7 +99,7 @@ func NewLogger() *Logger {
 		signalChan:     make(chan string, 1),
 	}
 	//default adapter console
-	logger.attach("console", LOGGER_LEVEL_DEBUG, NewConfigConsole(&ConsoleConfig{}))
+	logger.attach("console", LOGGER_LEVEL_DEBUG, &ConsoleConfig{})
 
 	return logger
 }
@@ -105,7 +107,7 @@ func NewLogger() *Logger {
 //start attach a logger adapter
 //param : adapterName console | file | database | ...
 //return : error
-func (logger *Logger) Attach(adapterName string, level int, config *Config) error {
+func (logger *Logger) Attach(adapterName string, level int, config Config) error {
 	logger.lock.Lock()
 	defer logger.lock.Unlock()
 
@@ -115,9 +117,9 @@ func (logger *Logger) Attach(adapterName string, level int, config *Config) erro
 //attach a logger adapter after lock
 //param : adapterName console | file | database | ...
 //return : error
-func (logger *Logger) attach(adapterName string, level int, config *Config) error {
+func (logger *Logger) attach(adapterName string, level int, config Config) error {
 	for _, output := range logger.outputs {
-		if(output.Name == adapterName) {
+		if output.Name == adapterName {
 			printError("logger: adapter " +adapterName+ "already attached!")
 		}
 	}
@@ -157,7 +159,7 @@ func (logger *Logger) Detach(adapterName string) error {
 func (logger *Logger) detach(adapterName string) error {
 	outputs := []*outputLogger{}
 	for _, output := range logger.outputs {
-		if(output.Name == adapterName) {
+		if output.Name == adapterName {
 			continue
 		}
 		outputs = append(outputs, output)
@@ -180,14 +182,14 @@ func (logger *Logger) SetAsync(data... int) {
 	logger.synchronous = false
 
 	msgChanLen := 100
-	if(len(data) > 0) {
+	if len(data) > 0 {
 		msgChanLen = data[0]
 	}
 
 	logger.msgChan = make(chan *loggerMessage, msgChanLen)
 	logger.signalChan = make(chan string, 1)
 
-	if (!logger.synchronous) {
+	if !logger.synchronous {
 		go func() {
 			defer func() {
 				e := recover()
@@ -210,13 +212,11 @@ func (logger *Logger) Writer(level int, msg string) error {
 		file = "null"
 		line = 0
 	}else {
-		fun := runtime.FuncForPC(pc)
-		funcName = fun.Name()
+		funcName = runtime.FuncForPC(pc).Name()
 	}
 	_, filename := path.Split(file)
 
-	levelString := levelStringMapping[level]
-	if(levelString == "") {
+	if levelStringMapping[level] == "" {
 		printError("logger: level " + strconv.Itoa(level) + " is illegal!")
 	}
 
@@ -226,14 +226,14 @@ func (logger *Logger) Writer(level int, msg string) error {
 		Millisecond : time.Now().UnixNano()/1e6,
 		MillisecondFormat : time.Now().Format("2006-01-02 15:04:05.999"),
 		Level :level,
-		LevelString: levelString,
+		LevelString: levelStringMapping[level],
 		Body: msg,
 		File : filename,
 		Line : line,
 		Function: funcName,
 	}
 
-	if(!logger.synchronous) {
+	if !logger.synchronous {
 		logger.wait.Add(1)
 		logger.msgChan <- loggerMsg
 	}else {
@@ -322,6 +322,21 @@ func (logger *Logger) LoggerLevel(levelStr string) int {
 	default:
 		return LOGGER_LEVEL_DEBUG
 	}
+}
+
+func loggerMessageFormat(format string, loggerMsg *loggerMessage) string {
+	message := strings.Replace(format, "%timestamp%", strconv.FormatInt(loggerMsg.Timestamp,10),1)
+	message = strings.Replace(message, "%timestamp_format%", loggerMsg.TimestampFormat, 1)
+	message = strings.Replace(message, "%millisecond%", strconv.FormatInt(loggerMsg.Millisecond, 10), 1)
+	message = strings.Replace(message, "%millisecond_format%", loggerMsg.MillisecondFormat, 1)
+	message = strings.Replace(message, "%level%", strconv.Itoa(loggerMsg.Level), 1)
+	message = strings.Replace(message, "%level_string%", loggerMsg.LevelString, 1)
+	message = strings.Replace(message, "%file%", loggerMsg.File, 1)
+	message = strings.Replace(message, "%line%", strconv.Itoa(loggerMsg.Line), 1)
+	message = strings.Replace(message, "%function%", loggerMsg.Function, 1)
+	message = strings.Replace(message, "%body%", loggerMsg.Body, 1)
+
+	return message
 }
 
 //log emergency level

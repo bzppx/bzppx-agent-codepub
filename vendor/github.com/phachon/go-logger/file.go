@@ -3,13 +3,12 @@ package go_logger
 import (
 	"sync"
 	"os"
-	"strconv"
 	"path"
 	"strings"
 	"time"
-	"github.com/phachon/go-logger/utils"
 	"errors"
-	"encoding/json"
+	"github.com/phachon/go-logger/utils"
+	"reflect"
 )
 
 const FILE_ADAPTER_NAME = "file"
@@ -71,6 +70,27 @@ type FileConfig struct {
 
 	// is json format
 	JsonFormat bool
+
+	// jsonFormat is false, please input format string
+	// if format is empty, default format "%millisecond_format% [%level_string%] %body%"
+	//
+	//  Timestamp "%timestamp%"
+	//	TimestampFormat "%timestamp_format%"
+	//	Millisecond "%millisecond%"
+	//	MillisecondFormat "%millisecond_format%"
+	//	Level int "%level%"
+	//	LevelString "%level_string%"
+	//	Body string "%body%"
+	//	File string "%file%"
+	//	Line int "%line%"
+	//	Function "%function%"
+	//
+	// example: format = "%millisecond_format% [%level_string%] %body%"
+	Format string
+}
+
+func (fc *FileConfig) Name() string {
+	return FILE_ADAPTER_NAME
 }
 
 var fileSliceDateMapping = map[string]int{
@@ -88,9 +108,18 @@ func NewAdapterFile() LoggerAbstract {
 }
 
 // init
-func (adapterFile *AdapterFile) Init(config *Config) error {
+func (adapterFile *AdapterFile) Init(fileConfig Config) error {
+	if fileConfig.Name() != FILE_ADAPTER_NAME {
+		return errors.New("logger file adapter init error, config must FileConfig")
+	}
 
-	adapterFile.config = config.File
+	vc := reflect.ValueOf(fileConfig)
+	fc := vc.Interface().(*FileConfig)
+	adapterFile.config = fc
+
+	if fc.JsonFormat == false && fc.Format == "" {
+		fc.Format = defaultLoggerMessageFormat
+	}
 
 	if len(adapterFile.config.LevelFileName) == 0 {
 		if adapterFile.config.Filename == "" {
@@ -129,26 +158,57 @@ func (adapterFile *AdapterFile) Init(config *Config) error {
 // Write
 func (adapterFile *AdapterFile) Write(loggerMsg *loggerMessage) error {
 
+	var accessChan = make(chan error, 1)
+	var levelChan = make(chan error, 1)
+
 	// access file write
-	accessFileWrite, ok := adapterFile.write[FILE_ACCESS_LEVEL]
-	if !ok {
-		return nil
-	}
-	err := accessFileWrite.writeByConfig(adapterFile.config, loggerMsg)
-	if err != nil {
-		return err
+	if adapterFile.config.Filename != "" {
+		go func() {
+			accessFileWrite, ok := adapterFile.write[FILE_ACCESS_LEVEL]
+			if !ok {
+				accessChan<-nil
+				return
+			}
+			err := accessFileWrite.writeByConfig(adapterFile.config, loggerMsg)
+			if err != nil {
+				accessChan<-err
+				return
+			}
+			accessChan<-nil
+		}()
 	}
 
 	// level file write
-	fileWrite, ok := adapterFile.write[loggerMsg.Level]
-	if !ok {
-		return nil
-	}
-	err = fileWrite.writeByConfig(adapterFile.config, loggerMsg)
-	if err != nil {
-		return err
+	if len(adapterFile.config.LevelFileName) != 0 {
+		go func() {
+			fileWrite, ok := adapterFile.write[loggerMsg.Level]
+			if !ok {
+				levelChan<-nil
+				return
+			}
+			err := fileWrite.writeByConfig(adapterFile.config, loggerMsg)
+			if err != nil {
+				levelChan<-err
+				return
+			}
+			levelChan<-nil
+		}()
 	}
 
+	var accessErr error
+	var levelErr error
+	if adapterFile.config.Filename != "" {
+		accessErr = <-accessChan
+	}
+	if len(adapterFile.config.LevelFileName) != 0 {
+		levelErr = <-levelChan
+	}
+	if accessErr != nil {
+		return accessErr.(error)
+	}
+	if levelErr != nil {
+		return levelErr.(error)
+	}
 	return nil
 }
 
@@ -169,9 +229,9 @@ func (adapterFile *AdapterFile) Name() string {
 func (fw *FileWriter) initFile() error {
 
 	//check file exits, otherwise create a file
-	ok, _ := utils.NewFile().PathExists(fw.filename)
+	ok, _ := utils.UtilFile.PathExists(fw.filename)
 	if ok == false {
-		err := utils.NewFile().CreateFile(fw.filename)
+		err := utils.UtilFile.CreateFile(fw.filename)
 		if err != nil {
 			return err
 		}
@@ -181,7 +241,7 @@ func (fw *FileWriter) initFile() error {
 	fw.startTime = time.Now().Unix()
 
 	// get file start lines
-	nowLines, err := utils.NewFile().GetFileLines(fw.filename)
+	nowLines, err := utils.UtilFile.GetFileLines(fw.filename)
 	if err != nil {
 		return err
 	}
@@ -199,16 +259,6 @@ func (fw *FileWriter) initFile() error {
 // write by config
 func (fw *FileWriter) writeByConfig(config *FileConfig, loggerMsg *loggerMessage) error {
 
-	//timestamp := loggerMsg.Timestamp
-	//timestampFormat := loggerMsg.TimestampFormat
-	//millisecond := loggerMsg.Millisecond
-	millisecondFormat := loggerMsg.MillisecondFormat
-	body := loggerMsg.Body
-	file := loggerMsg.File
-	line := loggerMsg.Line
-	levelString := loggerMsg.LevelString
-
-	//fileWrite := adapterFile.write
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 
@@ -236,10 +286,11 @@ func (fw *FileWriter) writeByConfig(config *FileConfig, loggerMsg *loggerMessage
 
 	msg := ""
 	if config.JsonFormat == true  {
-		jsonByte, _ := json.Marshal(loggerMsg)
-		msg = string(jsonByte) + "\n"
+		//jsonByte, _ := json.Marshal(loggerMsg)
+		jsonByte, _ := loggerMsg.MarshalJSON()
+		msg = string(jsonByte) + "\r\n"
 	}else {
-		msg = millisecondFormat +" ["+ levelString + "] [" + file + ":" + strconv.Itoa(line) + "] " + body + "\n"
+		msg = loggerMessageFormat(config.Format, loggerMsg) + "\r\n"
 	}
 
 	fw.writer.Write([]byte(msg))
@@ -306,12 +357,12 @@ func (fw *FileWriter) sliceByFileLines(maxLine int64) error {
 	filename := fw.filename
 	filenameSuffix := path.Ext(filename)
 	startLine := fw.startLine
-	randStr := utils.NewMisc().RandString(4)
 
 	if startLine >= maxLine {
 		//close file handle
 		fw.writer.Close()
-		oldFilename := strings.Replace(filename, filenameSuffix, "", 1) + "_line_"+strconv.FormatInt(maxLine, 10)+"_"+randStr+filenameSuffix
+		timeFlag := time.Now().Format("2006-01-02-15.04.05.9999")
+		oldFilename := strings.Replace(filename, filenameSuffix, "", 1) +"."+timeFlag+filenameSuffix
 		err := os.Rename(filename, oldFilename)
 		if err != nil {
 			return err
@@ -331,12 +382,12 @@ func (fw *FileWriter) sliceByFileSize(maxSize int64) error {
 	filename := fw.filename
 	filenameSuffix := path.Ext(filename)
 	nowSize, _ := fw.getFileSize(filename)
-	randStr := utils.NewMisc().RandString(4)
 
 	if nowSize >= maxSize {
 		//close file handle
 		fw.writer.Close()
-		oldFilename := strings.Replace(filename, filenameSuffix, "", 1) + "_size_"+strconv.FormatInt(maxSize, 10)+"_"+randStr+filenameSuffix
+		timeFlag := time.Now().Format("2006-01-02-15.04.05.9999")
+		oldFilename := strings.Replace(filename, filenameSuffix, "", 1) +"."+timeFlag+filenameSuffix
 		err := os.Rename(filename, oldFilename)
 		if err != nil {
 			return err
@@ -363,7 +414,7 @@ func (fw *FileWriter) getFileObject(filename string) (file *os.File, err error) 
 //return : fileSize(byte int64), error
 func (fw *FileWriter) getFileSize(filename string) (fileSize int64, err error) {
 	fileInfo, err := os.Stat(filename)
-	if(err != nil) {
+	if err != nil {
 		return fileSize, err
 	}
 

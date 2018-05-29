@@ -7,15 +7,17 @@ import (
 	"errors"
 )
 
-type Codec struct {
+var Codec = NewCodec()
+
+type codec struct {
 
 }
 
-func NewCodec() *Codec {
-	return &Codec{}
+func NewCodec() *codec {
+	return &codec{}
 }
 
-func (c *Codec) EncodePack(message []byte) ([]byte, error){
+func (c *codec) EncodePack(message []byte) ([]byte, error){
 
 	var messageLen = int32(len(message))
 	var pkg = new(bytes.Buffer)
@@ -34,7 +36,7 @@ func (c *Codec) EncodePack(message []byte) ([]byte, error){
 	return pkg.Bytes(), nil
 }
 
-func (c *Codec) DecodePack(read io.Reader) (string, error) {
+func (c *codec) DecodePack(read io.Reader) (string, error) {
 
 	// read header
 	var length int32

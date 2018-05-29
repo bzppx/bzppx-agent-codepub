@@ -3,10 +3,10 @@ package go_logger
 import (
 	"sync"
 	"io"
-	"strconv"
 	"github.com/fatih/color"
 	"os"
-	"encoding/json"
+	"reflect"
+	"errors"
 )
 
 const CONSOLE_ADAPTER_NAME  = "console"
@@ -42,8 +42,26 @@ type ConsoleConfig struct {
 	// is json format
 	JsonFormat bool
 
-	// is show file
-	ShowFileLine bool
+	// jsonFormat is false, please input format string
+	// if format is empty, default format "%millisecond_format% [%level_string%] %body%"
+	//
+	//  Timestamp "%timestamp%"
+	//	TimestampFormat "%timestamp_format%"
+	//	Millisecond "%millisecond%"
+	//	MillisecondFormat "%millisecond_format%"
+	//	Level int "%level%"
+	//	LevelString "%level_string%"
+	//	Body string "%body%"
+	//	File string "%file%"
+	//	Line int "%line%"
+	//	Function "%function%"
+	//
+	// example: format = "%millisecond_format% [%level_string%] %body%"
+	Format string
+}
+
+func (cc *ConsoleConfig) Name() string {
+	return CONSOLE_ADAPTER_NAME
 }
 
 func NewAdapterConsole() LoggerAbstract {
@@ -57,42 +75,46 @@ func NewAdapterConsole() LoggerAbstract {
 	}
 }
 
-func (adapterConsole *AdapterConsole) Init(config *Config) error {
-	adapterConsole.config = config.Console
+func (adapterConsole *AdapterConsole) Init(consoleConfig Config) error {
+	if consoleConfig.Name() != CONSOLE_ADAPTER_NAME {
+		return errors.New("logger console adapter init error, config must ConsoleConfig")
+	}
+
+	vc := reflect.ValueOf(consoleConfig)
+	cc := vc.Interface().(*ConsoleConfig)
+	adapterConsole.config = cc
+
+	if cc.JsonFormat == false && cc.Format == "" {
+		cc.Format = defaultLoggerMessageFormat
+	}
+
 	return nil
 }
 
 func (adapterConsole *AdapterConsole) Write(loggerMsg *loggerMessage) error {
 
-	//timestamp := loggerMsg.Timestamp
-	//timestampFormat := loggerMsg.TimestampFormat
-	//millisecond := loggerMsg.Millisecond
-	millisecondFormat := loggerMsg.MillisecondFormat
-	body := loggerMsg.Body
-	file := loggerMsg.File
-	line := loggerMsg.Line
-	levelString := loggerMsg.LevelString
-
 	msg := ""
 	if adapterConsole.config.JsonFormat == true  {
-		jsonByte, _ := json.Marshal(loggerMsg)
+		//jsonByte, _ := json.Marshal(loggerMsg)
+		jsonByte, _ := loggerMsg.MarshalJSON()
 		msg = string(jsonByte)
 	}else {
-		msg = millisecondFormat +" ["+ levelString + "] "
-		if adapterConsole.config.ShowFileLine {
-			msg += "[" + file + ":" + strconv.Itoa(line) + "] "
-		}
-		msg += body
+		msg = loggerMessageFormat(adapterConsole.config.Format, loggerMsg)
 	}
+	consoleWriter := adapterConsole.write
 
 	if adapterConsole.config.Color {
-		msg = adapterConsole.getColorByLevel(loggerMsg.Level, msg)
+		colorAttr := adapterConsole.getColorByLevel(loggerMsg.Level, msg)
+		consoleWriter.lock.Lock()
+		color.New(colorAttr).Println(msg)
+		consoleWriter.lock.Unlock()
+		return nil
 	}
 
-	consoleWriter := adapterConsole.write
 	consoleWriter.lock.Lock()
 	consoleWriter.writer.Write([]byte(msg + "\n"))
 	consoleWriter.lock.Unlock()
+
 	return nil
 }
 
@@ -104,13 +126,12 @@ func (adapterConsole *AdapterConsole) Flush() {
 
 }
 
-func (adapterConsole *AdapterConsole) getColorByLevel(level int, content string) string {
+func (adapterConsole *AdapterConsole) getColorByLevel(level int, content string) color.Attribute {
 	lc, ok := levelColors[level]
 	if !ok {
 		lc = color.FgWhite
 	}
-	colorFunc := color.New(lc).SprintFunc()
-	return colorFunc(content)
+	return lc
 }
 
 func init()  {

@@ -15,6 +15,7 @@ maxSize=1048576
 maxLine=1000000
 dateSlice="d"
 jsonFormat=true
+format=""
 
 [log.levelFilename]
 error="log/error.log"

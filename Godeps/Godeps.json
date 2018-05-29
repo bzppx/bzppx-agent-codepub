@@ -12,6 +12,22 @@
 			"Rev": "c794e982f018628929d6b35e89df6f94d61df3e4"
 		},
 		{
+			"ImportPath": "github.com/mailru/easyjson",
+			"Rev": "8b799c424f57fa123fc63a99d6383bc6e4c02578"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/buffer",
+			"Rev": "8b799c424f57fa123fc63a99d6383bc6e4c02578"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jlexer",
+			"Rev": "8b799c424f57fa123fc63a99d6383bc6e4c02578"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jwriter",
+			"Rev": "8b799c424f57fa123fc63a99d6383bc6e4c02578"
+		},
+		{
 			"ImportPath": "github.com/mattn/go-colorable",
 			"Comment": "v0.0.9-8-g6fcc0c1",
 			"Rev": "6fcc0c1fd9b620311d821b106a400b35dc95c497"
@@ -23,11 +39,11 @@
 		},
 		{
 			"ImportPath": "github.com/phachon/go-logger",
-			"Rev": "1add448a8b3cefc7c5d4210552ab27339a98f157"
+			"Rev": "9e475cfae691116763dd6f24836daf587e5e559f"
 		},
 		{
 			"ImportPath": "github.com/phachon/go-logger/utils",
-			"Rev": "1add448a8b3cefc7c5d4210552ab27339a98f157"
+			"Rev": "9e475cfae691116763dd6f24836daf587e5e559f"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",

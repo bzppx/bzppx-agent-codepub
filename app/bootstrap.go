@@ -16,7 +16,7 @@ var (
 )
 
 var (
-	Version = "v0.8.3"
+	Version = "v0.8.4"
 
 	Conf = viper.New()
 
@@ -71,7 +71,7 @@ func initLog() {
 	consoleConfig := &go_logger.ConsoleConfig{
 		Color: true,
 	}
-	Log.Attach("console", go_logger.LOGGER_LEVEL_DEBUG, go_logger.NewConfigConsole(consoleConfig))
+	Log.Attach("console", go_logger.LOGGER_LEVEL_DEBUG, consoleConfig)
 
 	// file adapter config
 	fileLevelStr := Conf.GetString("log.level")
@@ -90,8 +90,9 @@ func initLog() {
 		MaxLine:       Conf.GetInt64("log.maxLine"),
 		DateSlice:     Conf.GetString("log.dateSlice"),
 		JsonFormat:    Conf.GetBool("log.jsonFormat"),
+		Format:        Conf.GetString("log.format"),
 	}
-	Log.Attach("file", Log.LoggerLevel(fileLevelStr), go_logger.NewConfigFile(fileConfig))
+	Log.Attach("file", Log.LoggerLevel(fileLevelStr), fileConfig)
 }
 
 // init poster
@@ -106,8 +107,8 @@ func initPoster() {
                         /_/                               /____/
 ` +
 		"Author: bzppx\r\n" +
-		"Vserion: " + Version + "\r\n" +
-		"Link: github.com/bzppx/bzppx-agent-codepub")
+		"Version: " + Version + "\r\n" +
+		"Link: https://github.com/bzppx/bzppx-agent-codepub")
 	fmt.Println(logo)
 }
 

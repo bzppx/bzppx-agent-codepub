@@ -60,7 +60,7 @@ func rpcStartServer()  {
 			app.Log.Errorf("agent accept error, %s", err.Error())
 			break
 		}
-		clientToken, err := utils.NewCodec().DecodePack(conn)
+		clientToken, err := utils.Codec.DecodePack(conn)
 		if err != nil {
 			app.Log.Errorf("conn read token error, %s", err.Error())
 			conn.Close()
@@ -70,12 +70,12 @@ func rpcStartServer()  {
 		// read byte and encode pack
 		var checkRes []byte
 		if clientToken != token {
-			checkRes, err = utils.NewCodec().EncodePack(TokenError)
+			checkRes, err = utils.Codec.EncodePack(TokenError)
 			conn.Write(checkRes)
 			conn.Close()
 			continue
 		}else {
-			checkRes, err = utils.NewCodec().EncodePack(TokenSuccess)
+			checkRes, err = utils.Codec.EncodePack(TokenSuccess)
 			conn.Write(checkRes)
 		}
 
